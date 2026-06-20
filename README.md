@@ -14,9 +14,21 @@ developed in **GitHub Codespaces** · versioned on **GitHub**.
 
 ```
 invoiceau-starter/
-├─ supabase/schema.sql        ← run this once in Supabase to create tables + security
+├─ app/
+│  ├─ layout.js               ← PWA metadata, theme colour, registers the service worker
+│  ├─ page.js                 ← home (drop the demo UI in here)
+│  ├─ offline/page.js         ← shown when a page can't be reached offline
+│  └─ globals.css
+├─ components/PwaRegister.jsx  ← service-worker registration + "Install app" banner
+├─ public/
+│  ├─ manifest.webmanifest    ← name, icons, theme, shortcuts (the PWA identity)
+│  ├─ sw.js                   ← service worker: offline shell + caching
+│  ├─ favicon.ico
+│  └─ icons/                  ← 192 / 512 / maskable / apple-touch (ready-made)
+├─ supabase/schema.sql        ← run once in Supabase to create tables + security
 ├─ lib/supabase.js            ← Supabase client + GST/AUD helpers
 ├─ .devcontainer/             ← so the repo "just works" in Codespaces
+├─ next.config.js, tailwind.config.js, postcss.config.js
 ├─ .env.example               ← which secrets you need
 ├─ package.json               ← dependencies
 └─ README.md
@@ -105,6 +117,44 @@ await supabase.from("invoices").update({ status: "paid" }).eq("id", inv.id);
 it from the client.
 
 ---
+
+## Installing it as an app (PWA)
+
+InvoiceAU ships as a Progressive Web App, so people can install it to a phone
+home screen or desktop dock and open it offline — no app store needed.
+
+What's already wired up:
+
+- **`public/manifest.webmanifest`** — the app's name, icons, standalone display
+  mode, `#1f7a66` theme colour, and home-screen **shortcuts** ("New invoice",
+  "Invoices") that appear when you long-press the installed icon.
+- **`public/sw.js`** — a service worker that pre-caches the app shell, serves
+  pages network-first (fresh when online, cached when not, `/offline` as a last
+  resort), and **never caches Supabase calls** so your data is always live.
+- **`components/PwaRegister.jsx`** — registers the service worker and shows a
+  tasteful "Install app" banner when the browser offers one.
+- **`app/layout.js`** — sets the manifest link, theme colour, and Apple
+  web-app meta tags.
+- **`public/icons/`** — 192, 512, maskable, and apple-touch icons, ready to go.
+
+How it installs:
+
+- **Android / Chrome / Edge / desktop:** the browser fires an install prompt and
+  the in-app banner appears. One tap and it's on the device.
+- **iPhone / iPad (Safari):** iOS doesn't fire that event — users tap
+  **Share → Add to Home Screen**. The apple-touch icon and standalone display
+  are already set, so it opens chrome-free like a native app.
+
+Test it before shipping:
+
+1. `npm run build && npm run start` (the service worker only runs on a
+   production build, and on `https://` or `localhost`).
+2. Open Chrome DevTools → **Application → Manifest** and **Service Workers** to
+   confirm both are picked up; run **Lighthouse → PWA** for a checklist.
+3. On Vercel everything is HTTPS by default, so installability works in
+   production with no extra config.
+
+To force an update for everyone, bump `CACHE_VERSION` in `public/sw.js`.
 
 ## Australian compliance notes
 

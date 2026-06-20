@@ -1,0 +1,22 @@
+{
+  "name": "InvoiceAU",
+  "image": "mcr.microsoft.com/devcontainers/javascript-node:20",
+  "features": {
+    "ghcr.io/devcontainers/features/github-cli:1": {}
+  },
+  "forwardPorts": [3000],
+  "portsAttributes": {
+    "3000": { "label": "InvoiceAU (Next.js)", "onAutoForward": "openPreview" }
+  },
+  "postCreateCommand": "npm install",
+  "postAttachCommand": "echo 'Run: cp .env.example .env.local  then fill in your Supabase keys, then npm run dev'",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "dbaeumer.vscode-eslint",
+        "bradlc.vscode-tailwindcss",
+        "esbenp.prettier-vscode"
+      ]
+    }
+  }
+}
