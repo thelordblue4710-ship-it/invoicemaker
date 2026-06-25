@@ -346,6 +346,32 @@ function Editor({ inv, business, clients, onChange, onStatus, onPersist, onBack,
   const setItem = (id, patch) => onChange({ items: inv.items.map((it) => (it.id === id ? { ...it, ...patch } : it)) });
   const addItem = () => onChange({ items: [...inv.items, { id: "l" + Date.now(), description: "", qty: 1, unitPrice: 0, taxable: true }] });
   const removeItem = (id) => onChange({ items: inv.items.filter((it) => it.id !== id) });
+
+  const [sending, setSending] = useState(false);
+  const [sendMsg, setSendMsg] = useState(null); // { type: "ok" | "err", text }
+
+  async function sendInvoice() {
+    if (!client) { setSendMsg({ type: "err", text: "Pick a client first." }); return; }
+    if (!client.email) { setSendMsg({ type: "err", text: "This client has no email — add one in Clients." }); return; }
+    setSending(true); setSendMsg(null);
+    try {
+      await onPersist(); // save current edits before emailing
+      const res = await fetch("/api/send-invoice", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ invoice: inv, business, client }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Could not send the email.");
+      onStatus("sent");
+      setSendMsg({ type: "ok", text: `Sent to ${client.email}` });
+    } catch (e) {
+      setSendMsg({ type: "err", text: e.message });
+    } finally {
+      setSending(false);
+    }
+  }
+
   return (
     <div className="page editor">
       <header className="editor-head no-print">
@@ -444,8 +470,10 @@ function Editor({ inv, business, clients, onChange, onStatus, onPersist, onBack,
             <button className="ab-ghost danger" onClick={onDelete}><Trash2 size={15} /> Delete</button>
           </div>
           <div className="ab-right">
+            {sendMsg && <span className={"ab-msg " + sendMsg.type}>{sendMsg.text}</span>}
             <button className="ab-secondary" onClick={() => window.print()}><Printer size={15} /> Print / PDF</button>
-            <button className="ab-primary" onClick={onPersist} disabled={saving}><Save size={15} /> {saving ? "Saving…" : "Save invoice"}</button>
+            <button className="ab-send" onClick={sendInvoice} disabled={sending}><Mail size={15} /> {sending ? "Sending…" : "Send invoice"}</button>
+            <button className="ab-primary" onClick={onPersist} disabled={saving}><Save size={15} /> {saving ? "Saving…" : "Save"}</button>
           </div>
         </div>
       </div>
@@ -616,6 +644,12 @@ const CSS = `
 .ab-ghost.danger:hover{border-color:var(--clay);}
 .ab-secondary{display:inline-flex;align-items:center;gap:7px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 17px;font-size:13.5px;font-weight:600;font-family:inherit;cursor:pointer;color:var(--ink);transition:.15s;}
 .ab-secondary:hover{border-color:var(--ink2);}
+.ab-send{display:inline-flex;align-items:center;gap:7px;background:var(--eucalypt);color:#fff;border:0;padding:11px 18px;border-radius:10px;font-size:13.5px;font-weight:600;cursor:pointer;font-family:inherit;transition:.15s;}
+.ab-send:hover{filter:brightness(1.07);}
+.ab-send:disabled{opacity:.55;cursor:default;}
+.ab-msg{font-size:12.5px;font-weight:600;align-self:center;}
+.ab-msg.ok{color:var(--eucalypt);}
+.ab-msg.err{color:var(--clay);}
 .ab-primary{display:inline-flex;align-items:center;gap:7px;background:var(--ink);color:#fff;border:0;padding:11px 22px;border-radius:10px;font-size:13.5px;font-weight:600;cursor:pointer;font-family:inherit;transition:.15s;}
 .ab-primary:hover{background:var(--ink2);}
 .ab-primary:disabled{opacity:.55;cursor:default;}
@@ -668,6 +702,8 @@ const CSS = `
   .ab-left{justify-content:space-between;}
   .ab-left .ab-ghost{flex:1;justify-content:center;padding:9px 8px;}
   .ab-right .ab-secondary,.ab-right .ab-primary{flex:1;justify-content:center;}
+  .ab-send{flex:1;justify-content:center;}
+  .ab-msg{flex-basis:100%;text-align:center;order:-1;}
   .editor{padding-bottom:150px;} /* taller bar when stacked */
 }
 
