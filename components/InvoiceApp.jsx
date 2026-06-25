@@ -349,15 +349,10 @@ function Editor({ inv, business, clients, onChange, onStatus, onPersist, onBack,
   return (
     <div className="page editor">
       <header className="editor-head no-print">
-        <button className="ghost" onClick={onBack}><ChevronLeft size={16} /> Save &amp; back</button>
-        <div className="editor-actions">
-          <button className="ghost" onClick={onPersist} disabled={saving}><Save size={15} /> {saving ? "Saving…" : "Save"}</button>
-          {inv.status !== "paid" && <button className="ghost" onClick={() => onStatus("sent")}><Send size={15} /> Mark sent</button>}
-          {inv.status !== "paid"
-            ? <button className="good-btn" onClick={() => onStatus("paid")}><CheckCircle2 size={15} /> Mark paid</button>
-            : <button className="ghost" onClick={() => onStatus("sent")}>Reopen</button>}
-          <button className="ghost" onClick={() => window.print()}><Printer size={15} /> Print / PDF</button>
-          <button className="ghost danger" onClick={onDelete}><Trash2 size={15} /></button>
+        <button className="ghost back" onClick={onBack}><ChevronLeft size={16} /> Back to invoices</button>
+        <div className="editor-head-meta">
+          <span className="editor-num mono">{inv.number}</span>
+          <StatusPill inv={inv} />
         </div>
       </header>
       <div className="editor-grid">
@@ -434,6 +429,23 @@ function Editor({ inv, business, clients, onChange, onStatus, onPersist, onBack,
             </div>
             {inv.notes && <p className="pv-notes">{inv.notes}</p>}
             <p className="pv-foot">GST has been included where shown. Please pay by {fmtDate(inv.dueDate)} quoting reference {inv.number}.</p>
+          </div>
+        </div>
+      </div>
+
+      {/* ---- pinned bottom action bar ---- */}
+      <div className="action-bar no-print">
+        <div className="action-bar-inner">
+          <div className="ab-left">
+            {inv.status !== "paid" && <button className="ab-ghost" onClick={() => onStatus("sent")}><Send size={15} /> Mark sent</button>}
+            {inv.status !== "paid"
+              ? <button className="ab-ghost good" onClick={() => onStatus("paid")}><CheckCircle2 size={15} /> Mark paid</button>
+              : <button className="ab-ghost" onClick={() => onStatus("sent")}>Reopen</button>}
+            <button className="ab-ghost danger" onClick={onDelete}><Trash2 size={15} /> Delete</button>
+          </div>
+          <div className="ab-right">
+            <button className="ab-secondary" onClick={() => window.print()}><Printer size={15} /> Print / PDF</button>
+            <button className="ab-primary" onClick={onPersist} disabled={saving}><Save size={15} /> {saving ? "Saving…" : "Save invoice"}</button>
           </div>
         </div>
       </div>
@@ -558,12 +570,13 @@ const CSS = `
 .swatch.on{border-color:#fff;outline:2px solid var(--ink);}
 
 /* editor */
-.editor-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;}
-.editor-actions{display:flex;gap:8px;flex-wrap:wrap;}
+.editor{padding-bottom:96px;} /* room for the pinned action bar */
+.editor-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;gap:14px;}
+.editor-head-meta{display:flex;align-items:center;gap:12px;}
+.editor-num{font-size:14px;font-weight:600;color:var(--ink2);}
 .ghost{display:inline-flex;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--line);border-radius:9px;padding:8px 13px;font-size:13px;font-family:inherit;cursor:pointer;color:var(--ink2);transition:.15s;}
 .ghost:hover{border-color:var(--ink2);}
 .ghost.danger{color:var(--clay);}
-.good-btn{display:inline-flex;align-items:center;gap:6px;background:var(--eucalypt);color:#fff;border:0;border-radius:9px;padding:8px 14px;font-size:13px;font-family:inherit;cursor:pointer;}
 .editor-grid{display:grid;grid-template-columns:minmax(380px,1fr) 1.05fr;gap:22px;align-items:start;}
 
 .line-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;}
@@ -585,6 +598,27 @@ const CSS = `
 .lrem:disabled{opacity:.25;cursor:not-allowed;}
 .addline{margin-top:12px;display:inline-flex;align-items:center;gap:6px;background:transparent;border:1px dashed var(--line);border-radius:9px;padding:9px 13px;font-size:13px;color:var(--ink2);cursor:pointer;font-family:inherit;}
 .addline:hover{border-color:var(--eucalypt);color:var(--eucalypt);}
+
+/* ---- pinned bottom action bar ---- */
+.action-bar{
+  position:fixed;left:248px;right:0;bottom:0;z-index:40;
+  background:rgba(255,255,255,.9);backdrop-filter:blur(10px);
+  border-top:1px solid var(--line);padding:12px 40px;
+  box-shadow:0 -8px 24px -18px rgba(20,30,38,.4);
+}
+.action-bar-inner{max-width:1080px;margin:0 auto;display:flex;justify-content:space-between;align-items:center;gap:14px;}
+.ab-left,.ab-right{display:flex;align-items:center;gap:8px;}
+.ab-ghost{display:inline-flex;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--line);border-radius:9px;padding:9px 14px;font-size:13px;font-family:inherit;cursor:pointer;color:var(--ink2);transition:.15s;}
+.ab-ghost:hover{border-color:var(--ink2);}
+.ab-ghost.good{color:var(--eucalypt);background:var(--euc-soft);border-color:var(--euc-soft);}
+.ab-ghost.good:hover{border-color:var(--eucalypt);}
+.ab-ghost.danger{color:var(--clay);}
+.ab-ghost.danger:hover{border-color:var(--clay);}
+.ab-secondary{display:inline-flex;align-items:center;gap:7px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 17px;font-size:13.5px;font-weight:600;font-family:inherit;cursor:pointer;color:var(--ink);transition:.15s;}
+.ab-secondary:hover{border-color:var(--ink2);}
+.ab-primary{display:inline-flex;align-items:center;gap:7px;background:var(--ink);color:#fff;border:0;padding:11px 22px;border-radius:10px;font-size:13.5px;font-weight:600;cursor:pointer;font-family:inherit;transition:.15s;}
+.ab-primary:hover{background:var(--ink2);}
+.ab-primary:disabled{opacity:.55;cursor:default;}
 
 /* preview */
 .preview-col{position:sticky;top:20px;}
@@ -626,12 +660,22 @@ const CSS = `
   .nav{flex-direction:row;flex-wrap:wrap;margin:0;}.newbtn{margin:0;}.side-foot{display:none;}
   .editor-grid,.settings-grid,.stat-row{grid-template-columns:1fr;}
   .preview-col{position:static;}
+
+  /* action bar goes full-width and stacks on mobile */
+  .action-bar{left:0;padding:10px 16px;}
+  .action-bar-inner{flex-direction:column;align-items:stretch;gap:8px;}
+  .ab-left,.ab-right{width:100%;}
+  .ab-left{justify-content:space-between;}
+  .ab-left .ab-ghost{flex:1;justify-content:center;padding:9px 8px;}
+  .ab-right .ab-secondary,.ab-right .ab-primary{flex:1;justify-content:center;}
+  .editor{padding-bottom:150px;} /* taller bar when stacked */
 }
 
 @media print{
-  .no-print,.side{display:none !important;}
+  .no-print,.side,.action-bar{display:none !important;}
   .iau{display:block;background:#fff;}
   .main{padding:0;}
+  .editor{padding-bottom:0;}
   .editor-grid{display:block;}
   .preview{border:0;box-shadow:none;border-radius:0;padding:0;}
 }
